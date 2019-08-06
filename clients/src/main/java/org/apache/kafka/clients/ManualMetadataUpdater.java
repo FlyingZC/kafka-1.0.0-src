@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
+/** 空实现
  * A simple implementation of `MetadataUpdater` that returns the cluster nodes set via the constructor or via
  * `setNodes`.
  *

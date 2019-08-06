@@ -24,13 +24,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-/**
+/** 已发送 或 正在发送 但尚未收到响应 的请求集
  * The set of requests which have been sent or are being sent but haven't yet received a response
  */
 final class InFlightRequests {
 
-    private final int maxInFlightRequestsPerConnection;
-    private final Map<String, Deque<NetworkClient.InFlightRequest>> requests = new HashMap<>();
+    private final int maxInFlightRequestsPerConnection; // 一个连接最大的 InFlightRequests 数
+    private final Map<String, Deque<NetworkClient.InFlightRequest>> requests = new HashMap<>(); // NodeId -> 发送到对应 Node 的 InFlightRequest 的映射
 
     public InFlightRequests(int maxInFlightRequestsPerConnection) {
         this.maxInFlightRequestsPerConnection = maxInFlightRequestsPerConnection;
@@ -83,7 +83,7 @@ final class InFlightRequests {
         return requestQueue(node).pollFirst();
     }
 
-    /**
+    /** 判断是否可以向某个 node 发送请求
      * Can we send more requests to this node?
      *
      * @param node Node in question
@@ -92,7 +92,7 @@ final class InFlightRequests {
     public boolean canSendMore(String node) {
         Deque<NetworkClient.InFlightRequest> queue = requests.get(node);
         return queue == null || queue.isEmpty() ||
-               (queue.peekFirst().send.completed() && queue.size() < this.maxInFlightRequestsPerConnection);
+               (queue.peekFirst().send.completed() && queue.size() < this.maxInFlightRequestsPerConnection); // 头结点发送完毕 && queue未堆积满
     }
 
     /**

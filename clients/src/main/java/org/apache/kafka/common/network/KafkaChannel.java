@@ -29,7 +29,7 @@ import java.util.Objects;
 
 public class KafkaChannel {
     private final String id;
-    private final TransportLayer transportLayer;
+    private final TransportLayer transportLayer; // TransportLayer 封装 SocketChannel 和 SelectionKey.根据传输协议不同提供如 SslTransportLayer 等实现
     private final Authenticator authenticator;
     // Tracks accumulated network thread time. This is updated on the network thread.
     // The values are read and reset after each response is sent.

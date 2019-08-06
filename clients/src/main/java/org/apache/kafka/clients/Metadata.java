@@ -55,13 +55,13 @@ public final class Metadata {
     public static final long TOPIC_EXPIRY_MS = 5 * 60 * 1000;
     private static final long TOPIC_EXPIRY_NEEDS_UPDATE = -1L;
 
-    private final long refreshBackoffMs;
-    private final long metadataExpireMs;
+    private final long refreshBackoffMs; // 两次发出更新 Cluster 保存的元数据信息的最小时间差
+    private final long metadataExpireMs; // 每隔多久更新一次
     private int version;
-    private long lastRefreshMs;
-    private long lastSuccessfulRefreshMs;
+    private long lastRefreshMs; // 记录上一次更新元数据的时间戳
+    private long lastSuccessfulRefreshMs; // 上一次成功更新的时间戳
     private AuthenticationException authenticationException;
-    private Cluster cluster;
+    private Cluster cluster; // cluster
     private boolean needUpdate;
     /* Topics with expiry time */
     private final Map<String, Long> topics;
@@ -131,7 +131,7 @@ public final class Metadata {
         return Math.max(timeToExpire, timeToAllowUpdate);
     }
 
-    /**
+    /** 主线程 将 needUpdate 字段修改为 true,当 Sender 线程运行时会更新 Metadata 记录的集群元数据
      * Request an update of the current cluster metadata info, return the current version before the update
      */
     public synchronized int requestUpdate() {
@@ -160,10 +160,10 @@ public final class Metadata {
             return null;
     }
 
-    /**
+    /** 通过 version 版本号来判断元数据是否更新完成,更新未完成则阻塞等待
      * Wait for metadata update until the current version is larger than the last version we know of
      */
-    public synchronized void awaitUpdate(final int lastVersion, final long maxWaitMs) throws InterruptedException {
+    public synchronized void awaitUpdate(final int lastVersion, final long maxWaitMs) throws InterruptedException { // 加锁,与 sender 线程 通过 wait()/notify()协同
         if (maxWaitMs < 0) {
             throw new IllegalArgumentException("Max time to wait for metadata updates should not be < 0 milliseconds");
         }

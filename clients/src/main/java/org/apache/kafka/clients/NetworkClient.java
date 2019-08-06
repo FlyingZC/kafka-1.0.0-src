@@ -361,7 +361,7 @@ public class NetworkClient implements KafkaClient {
     private void sendInternalMetadataRequest(MetadataRequest.Builder builder,
                                              String nodeConnectionId, long now) {
         ClientRequest clientRequest = newClientRequest(nodeConnectionId, builder, now, true);
-        doSend(clientRequest, true, now);
+        doSend(clientRequest, true, now); // 缓存请求,在下次 poll() 操作中会将其发送出去
     }
 
     private void doSend(ClientRequest clientRequest, boolean isInternalRequest, long now) {
@@ -827,11 +827,11 @@ public class NetworkClient implements KafkaClient {
         }
 
         @Override
-        public long maybeUpdate(long now) {
+        public long maybeUpdate(long now) { // 判断当前的 Metadata 中保存的集群元数据是否需要更新
             // should we update our metadata?
-            long timeToNextMetadataUpdate = metadata.timeToNextUpdate(now);
-            long waitForMetadataFetch = this.metadataFetchInProgress ? requestTimeoutMs : 0;
-
+            long timeToNextMetadataUpdate = metadata.timeToNextUpdate(now); // 一个下次更新集群元数据的时间戳
+            long waitForMetadataFetch = this.metadataFetchInProgress ? requestTimeoutMs : 0; // 检测是否已经发送了 MetadataRequest 请求
+            // 计算当前距离下次可以发送 MetadataRequest 请求的时间差
             long metadataTimeout = Math.max(timeToNextMetadataUpdate, waitForMetadataFetch);
             if (metadataTimeout > 0) {
                 return metadataTimeout;
@@ -839,13 +839,13 @@ public class NetworkClient implements KafkaClient {
 
             // Beware that the behavior of this method and the computation of timeouts for poll() are
             // highly dependent on the behavior of leastLoadedNode.
-            Node node = leastLoadedNode(now);
+            Node node = leastLoadedNode(now); // 找到负载最小的 Node
             if (node == null) {
                 log.debug("Give up sending metadata request since no node is available");
                 return reconnectBackoffMs;
             }
 
-            return maybeUpdate(now, node);
+            return maybeUpdate(now, node); // 创建并缓存 MetadataRequest,等待下次 poll() 才会真正发送
         }
 
         @Override
@@ -914,10 +914,10 @@ public class NetworkClient implements KafkaClient {
         private long maybeUpdate(long now, Node node) {
             String nodeConnectionId = node.idString();
 
-            if (canSendRequest(nodeConnectionId)) {
+            if (canSendRequest(nodeConnectionId)) { // 检测是否允许向此 Node 发送请求
                 this.metadataFetchInProgress = true;
                 MetadataRequest.Builder metadataRequest;
-                if (metadata.needMetadataForAllTopics())
+                if (metadata.needMetadataForAllTopics()) // 指定需要更新元数据的 Topic
                     metadataRequest = MetadataRequest.Builder.allTopics();
                 else
                     metadataRequest = new MetadataRequest.Builder(new ArrayList<>(metadata.topics()),

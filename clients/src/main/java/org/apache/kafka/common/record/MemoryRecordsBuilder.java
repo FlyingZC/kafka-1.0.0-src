@@ -73,7 +73,7 @@ public class MemoryRecordsBuilder {
     private Long lastOffset = null;
     private Long firstTimestamp = null;
 
-    private MemoryRecords builtRecords;
+    private MemoryRecords builtRecords; // MemoryRecords
     private boolean aborted = false;
 
     public MemoryRecordsBuilder(ByteBufferOutputStream bufferStream,

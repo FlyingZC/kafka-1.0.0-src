@@ -89,12 +89,12 @@ public class Selector implements Selectable, AutoCloseable {
 
     private final Logger log;
     private final java.nio.channels.Selector nioSelector;
-    private final Map<String, KafkaChannel> channels;
+    private final Map<String, KafkaChannel> channels; // NodeId -> KafkaChannel 的映射
     private final Set<KafkaChannel> explicitlyMutedChannels;
     private boolean outOfMemory;
-    private final List<Send> completedSends;
-    private final List<NetworkReceive> completedReceives;
-    private final Map<KafkaChannel, Deque<NetworkReceive>> stagedReceives;
+    private final List<Send> completedSends; // 已经完全发送出去的请求
+    private final List<NetworkReceive> completedReceives; // 已经完全接收到的请求
+    private final Map<KafkaChannel, Deque<NetworkReceive>> stagedReceives; // 暂存一次 OP_READ 事件处理过程中读取到的全部请求
     private final Set<SelectionKey> immediatelyConnectedKeys;
     private final Map<String, KafkaChannel> closingChannels;
     private Set<SelectionKey> keysWithBufferedRead;
@@ -103,7 +103,7 @@ public class Selector implements Selectable, AutoCloseable {
     private final List<String> failedSends;
     private final Time time;
     private final SelectorMetrics sensors;
-    private final ChannelBuilder channelBuilder;
+    private final ChannelBuilder channelBuilder; // 用于创建 KafkaChannel 的 Builder.根据不同配置创建不同的 TransportLayer 的子类,然后创建 KafkaChannel
     private final int maxReceiveSize;
     private final boolean recordTimePerConnection;
     private final IdleExpiryManager idleExpiryManager;
@@ -180,7 +180,7 @@ public class Selector implements Selectable, AutoCloseable {
         this(NetworkReceive.UNLIMITED, connectionMaxIdleMS, metrics, time, metricGrpPrefix, Collections.<String, String>emptyMap(), true, channelBuilder, logContext);
     }
 
-    /**
+    /** 创建 KafkaChannel
      * Begin connecting to the given address and add the connection to this nioSelector associated with the given id
      * number.
      * <p>
@@ -201,9 +201,9 @@ public class Selector implements Selectable, AutoCloseable {
             throw new IllegalStateException("There is already a connection for id " + id + " that is still being closed");
 
         SocketChannel socketChannel = SocketChannel.open();
-        socketChannel.configureBlocking(false);
+        socketChannel.configureBlocking(false); // 非阻塞
         Socket socket = socketChannel.socket();
-        socket.setKeepAlive(true);
+        socket.setKeepAlive(true); // 长连接
         if (sendBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
             socket.setSendBufferSize(sendBufferSize);
         if (receiveBufferSize != Selectable.USE_DEFAULT_BUFFER_SIZE)
@@ -211,7 +211,7 @@ public class Selector implements Selectable, AutoCloseable {
         socket.setTcpNoDelay(true);
         boolean connected;
         try {
-            connected = socketChannel.connect(address);
+            connected = socketChannel.connect(address); // 开启连接
         } catch (UnresolvedAddressException e) {
             socketChannel.close();
             throw new IOException("Can't resolve address: " + address, e);
@@ -219,8 +219,8 @@ public class Selector implements Selectable, AutoCloseable {
             socketChannel.close();
             throw e;
         }
-        SelectionKey key = socketChannel.register(nioSelector, SelectionKey.OP_CONNECT);
-        KafkaChannel channel = buildChannel(socketChannel, id, key);
+        SelectionKey key = socketChannel.register(nioSelector, SelectionKey.OP_CONNECT); // socketChannel 注册到 nioSelector 上,并对 OP_CONNECT 事件感兴趣
+        KafkaChannel channel = buildChannel(socketChannel, id, key); // 根据 SocketChannel 和 SelectionKey 创建 KafkaChannel
 
         if (connected) {
             // OP_CONNECT won't trigger for immediately connected channels
@@ -360,7 +360,7 @@ public class Selector implements Selectable, AutoCloseable {
             throw new IllegalArgumentException("timeout should be >= 0");
 
         boolean madeReadProgressLastCall = madeReadProgressLastPoll;
-        clear();
+        clear(); // 将上一次 poll() 的结果全部清除掉
 
         boolean dataInBuffers = !keysWithBufferedRead.isEmpty();
 
@@ -416,7 +416,7 @@ public class Selector implements Selectable, AutoCloseable {
         addToCompletedReceives();
     }
 
-    /**
+    /** 处理就绪的 I/O 事件
      * handle any ready I/O on a set of selection keys
      * @param selectionKeys set of keys to handle
      * @param isImmediatelyConnected true if running over a set of keys for just-connected sockets

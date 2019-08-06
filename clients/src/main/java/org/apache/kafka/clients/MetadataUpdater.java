@@ -23,7 +23,7 @@ import org.apache.kafka.common.requests.RequestHeader;
 
 import java.util.List;
 
-/**
+/** 辅助 NetworkClient 更新 Metadata
  * The interface used by `NetworkClient` to request cluster metadata info to be updated and to retrieve the cluster nodes
  * from such metadata. This is an internal class.
  * <p>

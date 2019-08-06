@@ -240,19 +240,19 @@ public class Sender implements Runnable {
     }
 
     private long sendProducerData(long now) {
-        Cluster cluster = metadata.fetch();
+        Cluster cluster = metadata.fetch(); // 1. 从 Metadata 获取 Kafka 集群元数据
 
-        // get the list of partitions with data ready to send
+        // get the list of partitions with data ready to send. 2.获取准备发送数据的分区列表.根据 RecordAccumulator 的缓存情况,选出可以向哪些 Node 节点发送消息
         RecordAccumulator.ReadyCheckResult result = this.accumulator.ready(cluster, now);
 
-        // if there are any partitions whose leaders are not known yet, force metadata update
+        // if there are any partitions whose leaders are not known yet, force metadata update. 3.若有分区的 leader 未知,则更新 metadata
         if (!result.unknownLeaderTopics.isEmpty()) {
             // The set of topics with unknown leader contains topics with leader election pending as well as
             // topics which may have expired. Add the topic again to metadata to ensure it is included
             // and request metadata update, since there are messages to send to the topic.
             for (String topic : result.unknownLeaderTopics)
                 this.metadata.add(topic);
-            this.metadata.requestUpdate();
+            this.metadata.requestUpdate(); // 修改 needUpdate 标识
         }
 
         // remove any nodes we aren't ready to send to
@@ -260,13 +260,13 @@ public class Sender implements Runnable {
         long notReadyTimeout = Long.MAX_VALUE;
         while (iter.hasNext()) {
             Node node = iter.next();
-            if (!this.client.ready(node, now)) {
+            if (!this.client.ready(node, now)) { // 4.检查网络 I/O 是否符合发送消息的条件
                 iter.remove();
                 notReadyTimeout = Math.min(notReadyTimeout, this.client.connectionDelay(node, now));
             }
         }
 
-        // create produce requests
+        // create produce requests 5.获取待发送的消息集合
         Map<Integer, List<ProducerBatch>> batches = this.accumulator.drain(cluster, result.readyNodes,
                 this.maxRequestSize, now);
         if (guaranteeMessageOrder) {
@@ -277,7 +277,7 @@ public class Sender implements Runnable {
             }
         }
 
-        List<ProducerBatch> expiredBatches = this.accumulator.expiredBatches(this.requestTimeout, now);
+        List<ProducerBatch> expiredBatches = this.accumulator.expiredBatches(this.requestTimeout, now); // 6.处理 RecordAccumulator 中超时的消息
         // Reset the producer id if an expired batch has previously been sent to the broker. Also update the metrics
         // for expired batches. see the documentation of @TransactionState.resetProducerId to understand why
         // we need to reset the producer id here.
