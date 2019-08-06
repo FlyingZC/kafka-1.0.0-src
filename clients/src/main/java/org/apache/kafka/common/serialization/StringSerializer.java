@@ -29,7 +29,7 @@ public class StringSerializer implements Serializer<String> {
     private String encoding = "UTF8";
 
     @Override
-    public void configure(Map<String, ?> configs, boolean isKey) {
+    public void configure(Map<String, ?> configs, boolean isKey) { // 序列化前的配置处理
         String propertyName = isKey ? "key.serializer.encoding" : "value.serializer.encoding";
         Object encodingValue = configs.get(propertyName);
         if (encodingValue == null)
@@ -39,7 +39,7 @@ public class StringSerializer implements Serializer<String> {
     }
 
     @Override
-    public byte[] serialize(String topic, String data) {
+    public byte[] serialize(String topic, String data) { // 序列化为 byte[]
         try {
             if (data == null)
                 return null;

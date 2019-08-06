@@ -31,7 +31,7 @@ import org.apache.kafka.common.metrics.stats.Meter;
 import org.apache.kafka.common.utils.Time;
 
 
-/**
+/** 实现 ByteBuffer 的 复用
  * A pool of ByteBuffers kept under a given memory limit. This class is fairly specific to the needs of the producer. In
  * particular it has the following properties:
  * <ol>
@@ -45,11 +45,11 @@ public class BufferPool {
 
     static final String WAIT_TIME_SENSOR_NAME = "bufferpool-wait-time";
 
-    private final long totalMemory;
+    private final long totalMemory; // 整个 pool 的大小
     private final int poolableSize;
     private final ReentrantLock lock;
-    private final Deque<ByteBuffer> free;
-    private final Deque<Condition> waiters;
+    private final Deque<ByteBuffer> free; // 缓存了指定大小的 ByteBuffer 对象
+    private final Deque<Condition> waiters; // 记录因申请不到足够空间而阻塞的线程的 Condition 对象
     /** Total available memory is the sum of nonPooledAvailableMemory and the number of byte buffers in free * poolableSize.  */
     private long nonPooledAvailableMemory;
     private final Metrics metrics;

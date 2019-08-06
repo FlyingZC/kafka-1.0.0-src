@@ -41,7 +41,7 @@ public class DefaultPartitioner implements Partitioner {
 
     public void configure(Map<String, ?> configs) {}
 
-    /**
+    /** 根据 ProduceRecord 计算 分区
      * Compute the partition for the given record.
      *
      * @param topic The topic name
@@ -54,8 +54,8 @@ public class DefaultPartitioner implements Partitioner {
     public int partition(String topic, Object key, byte[] keyBytes, Object value, byte[] valueBytes, Cluster cluster) {
         List<PartitionInfo> partitions = cluster.partitionsForTopic(topic);
         int numPartitions = partitions.size();
-        if (keyBytes == null) {
-            int nextValue = nextValue(topic);
+        if (keyBytes == null) { // 没有 key
+            int nextValue = nextValue(topic); // 第一次生成随机数,后续自增
             List<PartitionInfo> availablePartitions = cluster.availablePartitionsForTopic(topic);
             if (availablePartitions.size() > 0) {
                 int part = Utils.toPositive(nextValue) % availablePartitions.size();
@@ -64,22 +64,22 @@ public class DefaultPartitioner implements Partitioner {
                 // no partitions are available, give a non-available partition
                 return Utils.toPositive(nextValue) % numPartitions;
             }
-        } else {
-            // hash the keyBytes to choose a partition
+        } else { // 有 key
+            // hash the keyBytes to choose a partition. keyBytes 的 hash % partition
             return Utils.toPositive(Utils.murmur2(keyBytes)) % numPartitions;
         }
     }
 
     private int nextValue(String topic) {
-        AtomicInteger counter = topicCounterMap.get(topic);
-        if (null == counter) {
+        AtomicInteger counter = topicCounterMap.get(topic); // 一个 topic 对应一个 随机数
+        if (null == counter) { // 第一次生成随机数
             counter = new AtomicInteger(ThreadLocalRandom.current().nextInt());
             AtomicInteger currentCounter = topicCounterMap.putIfAbsent(topic, counter);
             if (currentCounter != null) {
                 counter = currentCounter;
             }
         }
-        return counter.getAndIncrement();
+        return counter.getAndIncrement(); // 自增
     }
 
     public void close() {}

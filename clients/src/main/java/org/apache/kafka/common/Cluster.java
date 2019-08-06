@@ -34,15 +34,15 @@ import java.util.Set;
 public final class Cluster {
 
     private final boolean isBootstrapConfigured;
-    private final List<Node> nodes;
+    private final List<Node> nodes; // Kafka 集群中节点信息列表
     private final Set<String> unauthorizedTopics;
     private final Set<String> internalTopics;
     private final Node controller;
     private final Map<TopicPartition, PartitionInfo> partitionsByTopicPartition;
-    private final Map<String, List<PartitionInfo>> partitionsByTopic;
-    private final Map<String, List<PartitionInfo>> availablePartitionsByTopic;
+    private final Map<String, List<PartitionInfo>> partitionsByTopic;// List<PartitionInfo> 不一定需要有 leader
+    private final Map<String, List<PartitionInfo>> availablePartitionsByTopic; // Topic 与 PartitionInfo 映射,List<PartitionInfo>需要有 leader
     private final Map<Integer, List<PartitionInfo>> partitionsByNode;
-    private final Map<Integer, Node> nodesById;
+    private final Map<Integer, Node> nodesById; // BrokerId 与 Node节点 映射
     private final ClusterResource clusterResource;
 
     /**
@@ -182,7 +182,7 @@ public final class Cluster {
         return this.nodesById.get(id);
     }
 
-    /**
+    /** 获取给定的 topic-partition 的 leader
      * Get the current leader for the given topic-partition
      * @param topicPartition The topic and partition we want to know the leader for
      * @return The node that is the leader for this topic-partition, or null if there is currently no leader
@@ -214,7 +214,7 @@ public final class Cluster {
         return (parts == null) ? Collections.<PartitionInfo>emptyList() : parts;
     }
 
-    /**
+    /** 根据 topic 获取 分区 数量
      * Get the number of partitions for the given topic
      * @param topic The topic to get the number of partitions for
      * @return The number of partitions or null if there is no corresponding metadata
@@ -224,7 +224,7 @@ public final class Cluster {
         return partitions == null ? null : partitions.size();
     }
 
-    /**
+    /** 获取 topic 可用的 partitions
      * Get the list of available partitions for this topic
      * @param topic The topic name
      * @return A list of partitions

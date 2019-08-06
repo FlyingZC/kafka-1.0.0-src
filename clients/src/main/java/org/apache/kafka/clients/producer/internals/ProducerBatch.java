@@ -63,7 +63,7 @@ public final class ProducerBatch {
     final ProduceRequestResult produceFuture;
 
     private final List<Thunk> thunks = new ArrayList<>();
-    private final MemoryRecordsBuilder recordsBuilder;
+    private final MemoryRecordsBuilder recordsBuilder; // MemoryRecordsBuilder
     private final AtomicInteger attempts = new AtomicInteger(0);
     private final boolean isSplitBatch;
     private final AtomicReference<FinalState> finalState = new AtomicReference<>(null);

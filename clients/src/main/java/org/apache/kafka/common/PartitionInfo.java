@@ -16,7 +16,7 @@
  */
 package org.apache.kafka.common;
 
-/**
+/** 分区
  * This is used to describe per-partition state in the MetadataResponse.
  */
 public class PartitionInfo {
